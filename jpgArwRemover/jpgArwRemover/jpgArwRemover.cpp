@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 
 using namespace std;
@@ -62,12 +63,12 @@ class myApp {
 		void showFiles()
 		{
 			auto func = [](vector<string> &vec) { for(size_t i = 0; i < vec.size(); i++)
-												      cout << "    " << vec[i] << endl;
+												      cout << "    " << vec[i] << endl; cout << endl;
 												};
-			cout << "  *.ARW:" << endl;
+			cout << "  Found *.ARW files:" << endl;
 			func(vecArw);
 
-			cout << "  *.JPG:" << endl;
+			cout << "  Found *.JPG files:" << endl;
 			func(vecJpg);
 
 			return;
@@ -100,6 +101,8 @@ class myApp {
 				}
 			}
 
+			sort(vecDif.begin(), vecDif.end());
+
 			return;
 		}
 
@@ -107,14 +110,16 @@ class myApp {
 		{
 			if( vecDif.size() )
 			{
-				cout << "Moving..." << endl;
-
 				string dir = _currentDir + "\\_diff";
+
+				cout << "  Moving to " << dir << "\ ..." << endl;
 
 				CreateDirectoryA(dir.c_str(), NULL);
 
 				if( dirExists(dir) )
 				{
+					int cnt = 0;
+
 					for(size_t i = 0; i < vecDif.size(); i++)
 					{
 						wstring old_file = getWStr(_arwDir + "\\" + vecDif[i]);
@@ -122,10 +127,29 @@ class myApp {
 
 						cout << "\t" << vecDif[i] << endl;
 
-						MoveFile(old_file.c_str(), new_file.c_str());
+						#ifndef _DEBUG
+							if( MoveFile(old_file.c_str(), new_file.c_str()) )
+								cnt++;
+						#else
+							cnt++;
+						#endif
 					}
+
+					cout << endl;
+
+					#ifndef _DEBUG
+						cout << "  Moved " << cnt << " files." << endl;
+					#else
+						cout << "  Found " << cnt << " files. Files were NOT moved (Program is running in DEBUG mode)." << endl;
+					#endif
 				}
 			}
+			else
+			{
+				cout << "  No files to move found." << endl;
+			}
+
+			cout << "\n  Press Enter to exit: ";
 
 			return;
 		}
@@ -196,6 +220,8 @@ class myApp {
 				FindClose(hFind);
 			}
 
+			sort(vec.begin(), vec.end());
+
 			return res;
 		}
 
@@ -206,18 +232,10 @@ class myApp {
 									s = s.substr(0, pos);
 			};
 
-			auto remove1st = [](string &s) { 
-									int pos = s.find_last_of('.');
-									s = s.substr(1, pos);
-			};
-
 			bool res = true;
 
 			removeExt(arw);
 			removeExt(jpg);
-
-			remove1st(arw);
-			remove1st(jpg);
 
 			int len = arw.length();
 
@@ -233,9 +251,12 @@ class myApp {
 		vector<string> vecDif;
 
 		string _currentDir, _jpgDir, _arwDir, _error;
+
+		RECT				_consoleRect;
+		CONSOLE_FONT_INFOEX _cfi;
 };
 
-
+// ------------------------------------------------------------------------------------------------
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -243,11 +264,11 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if( app.getError().empty() )
 	{
-		cout << "Current Directory: '" << app.getExeDir() << "'\n" << endl;
+		cout << "  Current Directory: '" << app.getExeDir() << "'\n" << endl;
 
 		if( app.getBothDirs() )
 		{
-			cout << "Found both child directories: 'jpg' and 'arw':" << endl;
+			cout << "  Found all necessary sub-directories: 'jpg' and 'arw'.\n" << endl;
 
 			app.getFiles();
 
@@ -259,7 +280,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 		else
 		{
-			cout << "Error: Could not find child directories: 'jpg' and 'arw'" << endl;
+			cout << "  Error: Could not find necessary sub-directories: 'jpg' and 'arw'." << endl;
 		}
 	}
 	else
