@@ -37,6 +37,20 @@ class myApp {
 			}
 		}
 
+		void setCurrentDir(wstring &str)
+		{
+			string path = getStr(str);
+
+			if( dirExists(path) )
+			{
+			   _currentDir = path;
+			}
+			else
+			{
+			   _error  = "Program started with argument '/path' [" + path + "] which is not valid.\n\nPress 'Enter' to Exit.";
+			}
+		}
+
 		bool getBothDirs()
 		{
 			bool res = false;
@@ -61,10 +75,14 @@ class myApp {
 		}
 
 		void showFiles()
-		{
-			auto func = [](vector<string> &vec) { for(size_t i = 0; i < vec.size(); i++)
-												      cout << "    " << vec[i] << endl; cout << endl;
-												};
+		{					auto func = [](vector<string> &vec)
+							{ 
+								for(size_t i = 0; i < vec.size(); i++)
+									cout << "    " << vec[i] << endl;
+								
+								cout << endl;
+							};
+
 			cout << "  Found *.ARW files:" << endl;
 			func(vecArw);
 
@@ -169,6 +187,16 @@ class myApp {
 			return wS;
 		}
 
+		string getStr(wstring ws)
+		{
+			string S;
+			
+			for(size_t i = 0; i < ws.length(); i++)
+				S += ws[i];
+
+			return S;
+		}
+
 		bool dirExists(string s)
 		{
 			wstring wS = getWStr(s);
@@ -226,20 +254,17 @@ class myApp {
 		}
 
 		bool doCompare(string arw, string jpg)
-		{
-			auto removeExt = [](string &s) { 
-									int pos = s.find_last_of('.');
-									s = s.substr(0, pos);
-			};
-
+		{											auto removeExt = [](string &s) 
+													{ 
+														int pos = s.find_last_of('.');
+														s = s.substr(0, pos);
+													};
 			bool res = true;
 
 			removeExt(arw);
 			removeExt(jpg);
 
-			int len = arw.length();
-
-			res = (arw == jpg.substr(0, len));
+			res = (arw == jpg.substr(0, arw.length()));
 
 			return res;
 		}
@@ -251,9 +276,6 @@ class myApp {
 		vector<string> vecDif;
 
 		string _currentDir, _jpgDir, _arwDir, _error;
-
-		RECT				_consoleRect;
-		CONSOLE_FONT_INFOEX _cfi;
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -261,6 +283,18 @@ class myApp {
 int _tmain(int argc, _TCHAR* argv[])
 {
 	myApp app;
+
+    for(int i = 0; i < argc; i++)  
+	{
+		wstring param(argv[i]);
+
+		if( param.substr(0, 6) == L"/path=" )
+		{
+			wstring path(param.substr(6, param.length()-6));
+
+			app.setCurrentDir(path);
+		}
+	}
 
 	if( app.getError().empty() )
 	{
