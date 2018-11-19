@@ -28,7 +28,7 @@ class myApp {
 
 				for(int i = 0; i < len; i++)
 				{
-				   _currentDir += (char)path[i];
+				   _currentDir += static_cast<char>(path[i]);
 				}
 			}
 			else
@@ -37,9 +37,20 @@ class myApp {
 			}
 		}
 
-		void setCurrentDir(wstring &str)
+		void setCurrentDir(wstring str)
 		{
-			string path = getStr(str);
+			string path("");
+
+			str = str.substr(6, str.length());
+
+			for(unsigned int i = 0; i < str.length(); i++)
+			{
+				if( str[i] != '"' )
+					path += static_cast<char>(str[i]);
+			}
+
+			if( path[path.length()] != '\\' )
+				path += '\\';
 
 			if( dirExists(path) )
 			{
@@ -130,7 +141,7 @@ class myApp {
 			{
 				string dir = _currentDir + "\\_diff";
 
-				cout << "  Moving to " << dir << "\ ..." << endl;
+				cout << "  Moving to " << dir << "\\ ..." << endl;
 
 				CreateDirectoryA(dir.c_str(), NULL);
 
@@ -146,10 +157,39 @@ class myApp {
 						cout << "\t" << vecDif[i] << endl;
 
 						#ifndef _DEBUG
+
+							if( fileExists(new_file) )
+							{
+								cout << "\t\tFile exists already. Trying to find a new name for it..." << endl;
+
+								wstring testFile;
+
+								int pos = new_file.find_last_of('.');
+								int num = 1;
+
+								wstring fName = new_file.substr(0, pos) + L"_extra_file_";
+								wstring eName = new_file.substr(pos, new_file.length());
+
+								do  {
+
+									testFile = fName + to_wstring(num) + eName;
+									num++;
+
+								}
+								while( fileExists(testFile) );
+
+								new_file = testFile;
+
+								wcout << "\t\tNew name found: " << new_file << endl;
+							}
+
 							if( MoveFile(old_file.c_str(), new_file.c_str()) )
 								cnt++;
+
 						#else
+
 							cnt++;
+
 						#endif
 					}
 
@@ -164,7 +204,7 @@ class myApp {
 			}
 			else
 			{
-				cout << "  No files to move found." << endl;
+				cout << "  No files to move." << endl;
 			}
 
 			cout << "\n  Press Enter to exit: ";
@@ -192,7 +232,7 @@ class myApp {
 			string S;
 			
 			for(size_t i = 0; i < ws.length(); i++)
-				S += ws[i];
+				S += static_cast<char>(ws[i]);
 
 			return S;
 		}
@@ -204,6 +244,13 @@ class myApp {
 			DWORD dwAttrib = GetFileAttributes(wS.c_str());
 
 			return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+		};
+
+		bool fileExists(wstring s)
+		{
+			DWORD dwAttrib = GetFileAttributes(s.c_str());
+
+			return (dwAttrib != INVALID_FILE_ATTRIBUTES);
 		};
 
 		int findFiles(string dir, vector<string> &vec, char *mask)
@@ -235,7 +282,7 @@ class myApp {
 
 						while( ffd.cFileName[i] != '\0' )
 						{
-							name.push_back(ffd.cFileName[i]);
+							name.push_back( static_cast<char>(ffd.cFileName[i]) );
 							i++;
 						}
 
@@ -284,17 +331,18 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	myApp app;
 
+
+	// set path from the argument, if present
     for(int i = 0; i < argc; i++)  
 	{
 		wstring param(argv[i]);
 
 		if( param.substr(0, 6) == L"/path=" )
 		{
-			wstring path(param.substr(6, param.length()-6));
-
-			app.setCurrentDir(path);
+			app.setCurrentDir(param);
 		}
 	}
+
 
 	if( app.getError().empty() )
 	{
